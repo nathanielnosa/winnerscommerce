@@ -67,7 +67,7 @@ PAYMENT_METHOD=(
     ('paypal','paypal'),
     ('fluter','fluter'),
 )
-class Order():
+class Order(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     order_by = models.CharField(max_length=255)
     shipping_address = models.TextField()
