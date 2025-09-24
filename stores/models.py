@@ -1,7 +1,7 @@
 from django.db import models
 
 from users.models import Profile
-
+from . paystack import Paystack
 import secrets
 
 class Category(models.Model):
@@ -94,4 +94,18 @@ class Order(models.Model):
     def amount_value(self)->int:
         self.amount * 100
 
-    # verify
+    def verify_payment(self):
+        paystack = Paystack()
+        status, result = paystack.verify_payment(self.ref)
+        if status and result.get("status") == "success":
+            if result['amount'] / 100 == self.amount:
+                self.payment_completed = True
+                self.save()
+                return True
+            if self.payment_completed == True:
+                # del self.cart
+                self.cart = None
+                self.save()
+                return True
+            return False
+        return False

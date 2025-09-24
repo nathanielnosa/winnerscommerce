@@ -161,3 +161,51 @@ class AddToCartView(APIView):
             return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # ::::: END OF ADD TO CART ::::::
 
+# ::::: MY CART ::::::
+class MyCartView(APIView):
+    def get(self, request):
+        try:
+            cart_id = request.session.get('cart_id',None)
+            if cart_id:
+                cart = get_object_or_404(Cart, id=cart_id)
+                return Response({"Message": f'Profile - {cart.profile}'}, status=status.HTTP_200_OK)
+            return Response({"Message":"Cart not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# ::::: END OF MY CART ::::::
+
+# ::::: MANAGE CART ::::::
+class ManageCartView(APIView):
+    def post(self, request, id):
+        action = request.data.get('action', None)
+        try:
+            cart_obj = CartProduct.objects.get(id=id)
+            cart = cart_obj.cart
+            price = cart_obj.product.discount_price if cart_obj.product.discount_price else cart_obj.product.price
+
+            if action == "inc":
+                cart_obj.quantity += 1
+                cart_obj.subtotal += price
+                cart_obj.save()
+                cart.total += price
+                cart.save()
+                return Response({"Message":"Item increase from cart"}, status=status.HTTP_200_OK)
+            elif action == "dcr":
+                cart_obj.quantity -= 1
+                cart_obj.subtotal -= price
+                cart_obj.save()
+                cart.total -= price
+                cart.save()
+                if cart_obj.quantity == 0:
+                    cart_obj.delete()
+                return Response({"Message":"Item decreased from cart"}, status=status.HTTP_200_OK)
+            elif action == "rmv":
+                cart.total -= price
+                cart.save()
+                cart_obj.delete()
+                return Response({"Message":"Item removed from cart"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# ::::: END OF MANAGE CART ::::::
